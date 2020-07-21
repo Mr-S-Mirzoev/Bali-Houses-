@@ -157,7 +157,7 @@ class Property:
                 for val in reversed(lst):
                     try:
                         self.year = int(val)
-                        break;
+                        break
                     except ValueError:
                         continue
                 else:
@@ -251,6 +251,8 @@ if (input().strip() == 'yes'):
     print("Enter the quantity of pages on the website https://www.villabalisale.com/")
     quantity = int(input())
     properties = set()
+    print("Getting the links to the properties:")
+    printProgressBar(0, quantity, prefix = 'Progress:', suffix = 'Complete', length = 50)
     with open("property_url.txt", "w") as f:
         for i in range(quantity):
             url = 'https://www.villabalisale.com/search/villas-for-sale?page={}'.format(i) # going through pages.
@@ -263,6 +265,11 @@ if (input().strip() == 'yes'):
                     if s not in properties:
                         f.write(s + "\n")
                         properties.add(s)
+            printProgressBar(i, quantity, prefix = 'Progress:', suffix = 'Complete', length = 50)
+    printProgressBar(quantity, quantity, prefix = 'Progress:', suffix = 'Complete', length = 50)
+    print()
+
+print("Collecting data from the properties' websites.")
 
 i = 0
 first = 0
@@ -347,10 +354,6 @@ with open("property_url.txt", "r") as f:
                 
         else:
             third += 1
-            '''
-            with open("prop"+str(i)+"v.txt", "w") as fw:
-                fw.write(response.text)
-            '''
         if not d:
             failed.append(url)
         #print(d)
@@ -365,6 +368,7 @@ with open("property_url.txt", "r") as f:
         response = None
         property_containers = None
         d = None
+print()
 
 with open("failed.txt", "w") as fw:
     fw.writelines(failed)
@@ -381,7 +385,9 @@ for index, col in enumerate(cols):
     value = cols[index]
     row.write(index, value)
 row.write(len(cols), 'Links')
+print("Writing data to the XLS table:")
 num = 1
+printProgressBar(num, len(succeed), prefix = 'Progress:', suffix = 'Complete', length = 50)
 for pr in succeed:
     row = sheet1.row(num)
     if pr and not pr.nil():
@@ -391,5 +397,8 @@ for pr in succeed:
             row.write(index, value)
         row.write(len(cols), xlwt.Formula('HYPERLINK("%s";"Link")' % d['Link']))
         num += 1
+        printProgressBar(num, len(succeed), prefix = 'Progress:', suffix = 'Complete', length = 50)
+printProgressBar(len(succeed), len(succeed), prefix = 'Progress:', suffix = 'Complete', length = 50)
+print()
 # Save the result
 book.save("table.xls")
