@@ -246,24 +246,23 @@ class Property:
     def nil (self):
         return (self.price == self.year == 0 and self.land_size == self.build_size == 0.0)
 
-'''
-print("Enter the quantity of pages on the website https://www.villabalisale.com/")
-quantity = int(input())
-properties = set()
-with open("property_url.txt", "w") as f:
-    for i in range(quantity):
-        url = 'https://www.villabalisale.com/search/villas-for-sale?page={}'.format(i) # going through pages.
-        response = get(url)
-        html_soup = BeautifulSoup(response.text, 'html.parser')
-        property_containers = html_soup.find_all('a', href=True)
-        for pr in property_containers:
-            s = str(pr['href']).strip()
-            if (s.find("https://www.villabalisale.com/property/") == 0):
-                if s not in properties:
-                    f.write(s + "\n")
-                    properties.add(s)
-'''
-#print(len(properties))
+print("Reload the links database? (yes/no)")
+if (input().strip() == 'yes'):
+    print("Enter the quantity of pages on the website https://www.villabalisale.com/")
+    quantity = int(input())
+    properties = set()
+    with open("property_url.txt", "w") as f:
+        for i in range(quantity):
+            url = 'https://www.villabalisale.com/search/villas-for-sale?page={}'.format(i) # going through pages.
+            response = get(url)
+            html_soup = BeautifulSoup(response.text, 'html.parser')
+            property_containers = html_soup.find_all('a', href=True)
+            for pr in property_containers:
+                s = str(pr['href']).strip()
+                if (s.find("https://www.villabalisale.com/property/") == 0):
+                    if s not in properties:
+                        f.write(s + "\n")
+                        properties.add(s)
 
 i = 0
 first = 0
@@ -394,80 +393,3 @@ for pr in succeed:
         num += 1
 # Save the result
 book.save("table.xls")
-
-'''
-url = "https://www.villabalisale.com/property/villas-for-sale/amazing-spacious-villa-with-rice-paddies-view-for-sale-in-canggu"
-response = get(url.strip())
-with open("prop"+str(0)+"v.txt", "w") as fw:
-    fw.write(response.text)
-response = None
-url = "https://www.villabalisale.com/property/villas-for-sale/2-bedroom-off-plan-apartment-close-to-the-beach-for-sale"
-response = get(url.strip())
-with open("prop"+str(1)+"v.txt", "w") as fw:
-    fw.write(response.text)
-response = None
-'''
-
-"""
-html_soup = BeautifulSoup(response.text, 'html.parser')
-property_containers = html_soup.find_all('div', class_ = "main-detail")
-print(property_containers)
-d = get_main_details (property_containers)
-print(d)
-"""
-        #response = None
-    
-    #print(l)
-'''
-main_det = s = ' '.join(str(property_containers[0]).split(' ')).splitlines()
-details = dict()
-i = 0
-for s in main_det:
-    print(s + '   ' + str(s.find('title')))
-    if s.find('title') != -1:
-        r = s.rfind('<')
-        l = s.rfind('>', -1)
-        r_ = main_det[i + 1].rfind('<')
-        l_ = main_det[i + 1].rfind('>', -1)
-        details[s[l:r]] = main_det[i + 1][l_: r_]
-    i += 1
-print(details)
-'''
-
-#print(response.text[1000:100000])
-"""
-for property_url in f.readlines():
-    url = property_url
-    print(url.strip())
-    response = get(url)
-    print(response.text[1000:10000])
-    html_soup = BeautifulSoup(response.text, 'html.parser')
-    property_containers = html_soup.find_all('div', class_ = "detail-page")
-    print(property_containers)
-    #print("\n\n\n\n\n\n\n\n\n\n\n")
-"""
-
-# Validate the website
-# print(response.text[80000:100000])
-"""
-#property_containers = html_soup.find_all('div', class_ = "box property-item")
-property_containers = html_soup.find_all('a', href=True)
-print(type(property_containers))
-print(len(property_containers))
-print("\n\n\n\n\n\n\n\n\n\n\n")
-for pr in property_containers:
-    s = str(pr['href']).strip()
-    if s:
-        print("Next property:")
-        print(s)
-
-with open("index.html", "r") as f:
-    
-    contents = f.read()
- 
-    soup = BeautifulSoup(contents, 'lxml')
- 
-    print(soup.h2)
-    print(soup.head)
-    print(soup.li)
-"""
