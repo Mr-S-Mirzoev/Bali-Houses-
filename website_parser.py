@@ -1,5 +1,5 @@
 #!/usr/bin/python3
- 
+
 from bs4 import BeautifulSoup
 from requests import get
 import re
@@ -248,7 +248,7 @@ class Property:
 
 print("Reload the links database? (yes/no)")
 if (input().strip() == 'yes'):
-    print("Enter the quantity of pages on the website https://www.villabalisale.com/search/villas-for-sale")
+    print("Enter the quantity of pages on the website https://www.villabalisale.com/")
     quantity = int(input())
     properties = set()
     print("Getting the links to the properties:")
@@ -402,3 +402,45 @@ printProgressBar(len(succeed), len(succeed), prefix = 'Progress:', suffix = 'Com
 print()
 # Save the result
 book.save("table.xls")
+
+print("Enter your email:")
+receiver_address = input().strip()
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
+mail_content = '''Hello,
+This is a test mail.
+In this mail we are sending some attachments.
+The mail is sent using Python SMTP library.
+Thank You
+'''
+#The mail addresses and password
+sender_address = 'takerspam3@gmail.com'
+sender_pass = 'sergiois123!'
+
+#Setup the MIME
+message = MIMEMultipart()
+message['From'] = sender_address
+message['To'] = receiver_address
+message['Subject'] = 'A test mail sent by Python. It has an attachment.'
+#The subject line
+#The body and the attachments for the mail
+message.attach(MIMEText(mail_content, 'plain'))
+attach_file_name = 'table.xls'
+attach_file = open(attach_file_name, 'rb')  # Open the file as binary mode
+payload = MIMEBase('application', 'vnd.ms-excel')
+payload.set_payload((attach_file).read())
+encoders.encode_base64(payload)  #encode the attachment
+#add payload header with filename
+payload.add_header('Content-Disposition', 'attachment; filename="{}"'.format(attach_file_name))
+message.attach(payload)
+#Create SMTP session for sending the mail
+session = smtplib.SMTP('smtp.gmail.com', 587)  #use gmail with port
+session.starttls()  #enable security
+session.login(sender_address, sender_pass)  #login with mail_id and password
+text = message.as_string()
+session.sendmail(sender_address, receiver_address, text)
+session.quit()
+print('Mail Sent')
