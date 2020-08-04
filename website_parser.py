@@ -248,7 +248,7 @@ class Property:
 
 print("Reload the links database? (yes/no)")
 if (input().strip() == 'yes'):
-    print("Enter the quantity of pages on the website https://www.villabalisale.com/")
+    print("Enter the quantity of pages on the website https://www.villabalisale.com/search/villas-for-sale")
     quantity = int(input())
     properties = set()
     print("Getting the links to the properties:")
