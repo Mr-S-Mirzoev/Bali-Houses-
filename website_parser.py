@@ -4,6 +4,8 @@ from bs4 import BeautifulSoup
 from requests import get
 import re
 from copy import deepcopy
+import xlrd
+from xlrd.sheet import ctype_text
 import xlwt
 
 def file_len(fname):
@@ -203,6 +205,27 @@ class Property:
             else:
                 self.per_unit_a_year = None
 
+    def update_from_table(self, d):
+        d = dict()
+        cols = ["Code", "Villa/Land", "Location type", "Location", "Year built", "Land size, are", "Building Size, sqm", "Bedrooms", "Bathrooms", "Status", "Distance to beach", "Distance to airport", "Distance to market", "Lease time", "Price", "Per are", "Per unit", "Per are per year", "Per unit per year"]
+        self.code = d[cols[0]]
+        self.villa = (d[cols[1]] == 'Villa')
+        self.loc_type = d[cols[2]]
+        self.place = d[cols[3]]
+        self.year = d[cols[4]]
+        self.land_size = d[cols[5]]
+        self.build_size = d[cols[6]]
+        self.bedrooms = d[cols[7]]
+        self.bathrooms = d[cols[8]]
+        self.status = d[cols[9]]
+        self.d_beach = d[cols[10]]
+        self.d_airport = d[cols[11]]
+        self.d_market = d[cols[12]]
+        self.time = d[cols[13]]
+        if d[cols[14]]:
+            self.price = int(d[cols[14]])
+        self.link = d['Link']
+
     def dictify(self):
         d = dict()
         cols = ["Code", "Villa/Land", "Location type", "Location", "Year built", "Land size, are", "Building Size, sqm", "Bedrooms", "Bathrooms", "Status", "Distance to beach", "Distance to airport", "Distance to market", "Lease time", "Price", "Per are", "Per unit", "Per are per year", "Per unit per year"]
@@ -246,28 +269,128 @@ class Property:
     def nil (self):
         return (self.price == self.year == 0 and self.land_size == self.build_size == 0.0)
 
-print("Reload the links database? (yes/no)")
-if (input().strip() == 'yes'):
-    print("Enter the quantity of pages on the website https://www.villabalisale.com/search/villas-for-sale")
-    quantity = int(input())
-    properties = set()
-    print("Getting the links to the properties:")
-    printProgressBar(0, quantity, prefix = 'Progress:', suffix = 'Complete', length = 50)
-    with open("property_url.txt", "w") as f:
-        for i in range(quantity):
-            url = 'https://www.villabalisale.com/search/villas-for-sale?page={}'.format(i) # going through pages.
-            response = get(url)
-            html_soup = BeautifulSoup(response.text, 'html.parser')
-            property_containers = html_soup.find_all('a', href=True)
-            for pr in property_containers:
-                s = str(pr['href']).strip()
-                if (s.find("https://www.villabalisale.com/property/") == 0):
-                    if s not in properties:
-                        f.write(s + "\n")
-                        properties.add(s)
-            printProgressBar(i, quantity, prefix = 'Progress:', suffix = 'Complete', length = 50)
-    printProgressBar(quantity, quantity, prefix = 'Progress:', suffix = 'Complete', length = 50)
-    print()
+class Database:
+    def __init__(self):
+        self.table = dict()
+        self.cols_name = ["Code", "Villa/Land", "Location type", "Location", "Year built", "Land size, are", "Building Size, sqm", "Bedrooms", "Bathrooms", "Status", "Distance to beach", "Distance to airport", "Distance to market", "Lease time", "Price", "Per are", "Per unit", "Per are per year", "Per unit per year"]
+
+    def __load__(self):
+        book = xlrd.open_workbook("table.xls", formatting_info=True)
+        sheets = book.sheet_names()
+
+        print ("sheets are:", sheets)
+        for index, sh in enumerate(sheets):
+            sheet = book.sheet_by_index(index)
+            print ("Sheet:", sheet.name)
+            rows, cols = sheet.nrows, sheet.ncols
+            print ("Number of rows: %s   Number of cols: %s" % (rows, cols))
+
+            # Iterate through rows
+            for row_idx in range(0, sheet.nrows):
+                print('Row ', row_idx)
+                row_dict = dict()
+                for col_idx in range(len(self.cols_name)):
+                    cell_obj = sheet.cell(row_idx, col_idx)
+                    row_dict[self.cols_name[col_idx]] = cell_obj.value
+
+                pr = Property()
+                pr.update_from_table(row_dict)
+                #print(pr.dictify())
+                xfx = sheet.cell_xf_index(row_idx, 0)
+                xf = book.xf_list[xfx]
+                bgx = xf.background.pattern_colour_index
+                self.table[pr.code] = tuple(pr, bgx)
+                #print ("\t\tColor %d" % bgx)
+                #row_vals.append(cell_obj.value)
+
+class Commit:
+    
+    def __init__(self, old: Database, new: list):
+        self.stage = list()
+        self.old = old
+        self.new = new
+    
+    def stage(self):
+        cols = ["Code", "Villa/Land", "Location type", "Location", "Year built", "Land size, are", "Building Size, sqm", "Bedrooms", "Bathrooms", "Status", "Distance to beach", "Distance to airport", "Distance to market", "Lease time", "Price", "Per are", "Per unit", "Per are per year", "Per unit per year"]
+        RED = 0
+        codes_old = set()
+        for pr, clr in self.old.table:
+            if clr != RED:
+                codes_old.add(pr.code)
+        codes_done = set()
+        for val in self.new:
+            d = val.dictify()
+            if d[cols[0]] in codes_old:
+                codes_done.add(d[cols[0]])
+                changes = list()
+                for i in range(1, len(cols)):
+                    if d[cols[i]] != self.old.table[val]:
+                        changes.append(i)
+                stg = dict()
+                if changes:
+                    stg["clr"] = YELLOW
+                    stg["data"] = deepcopy(d)
+                    stg["chg"] = deepcopy(changes)
+                else:
+                    stg["clr"] = WHITE
+                    stg["data"] = deepcopy(d)
+            else:
+                stg = dict()
+                stg["clr"] = GREEN
+                stg["data"] = deepcopy(d)
+            self.stage.append(stg)
+        code_dif = codes_old.difference(codes_done)
+        for pr_cd in code_dif:
+            stg = dict()
+            stg["clr"] = RED
+            stg["data"] = deepcopy(self.old.table[pr_cd])
+            self.stage.append(stg)
+
+                
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+print("Enter the quantity of pages on the website https://www.villabalisale.com/search/villas-for-sale")
+quantity = int(input())
+properties = set()
+print("Getting the links to the properties:")
+printProgressBar(0, quantity, prefix = 'Progress:', suffix = 'Complete', length = 50)
+with open("property_url.txt", "w") as f:
+    for i in range(quantity):
+        url = 'https://www.villabalisale.com/search/villas-for-sale?page={}'.format(i) # going through pages.
+        response = get(url)
+        html_soup = BeautifulSoup(response.text, 'html.parser')
+        property_containers = html_soup.find_all('a', href=True)
+        for pr in property_containers:
+            s = str(pr['href']).strip()
+            if (s.find("https://www.villabalisale.com/property/") == 0):
+                if s not in properties:
+                    f.write(s + "\n")
+                    properties.add(s)
+        printProgressBar(i, quantity, prefix = 'Progress:', suffix = 'Complete', length = 50)
+printProgressBar(quantity, quantity, prefix = 'Progress:', suffix = 'Complete', length = 50)
+print()
 
 print("Collecting data from the properties' websites.")
 
@@ -394,7 +517,8 @@ for pr in succeed:
         d = pr.dictify()
         for index, col in enumerate(cols):
             value = d[cols[index]]
-            row.write(index, value)
+            style=xlwt.easyxf('pattern: pattern solid, fore_colour blue;') #style
+            row.write(index, value, style)
         row.write(len(cols), xlwt.Formula('HYPERLINK("%s";"Link")' % d['Link']))
         num += 1
         printProgressBar(num, len(succeed), prefix = 'Progress:', suffix = 'Complete', length = 50)
