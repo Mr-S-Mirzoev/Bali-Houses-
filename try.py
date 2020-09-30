@@ -303,7 +303,7 @@ class Cell:
     
 class Row:
     def __init__(self, row_num):
-        self.data = [None]*len(cols_name)
+        self.data = [Cell(None, Color.WHITE)]*len(cols_name)
         self.row_num = row_num
 
     def update_cell(self, idx, data, color):
@@ -311,19 +311,19 @@ class Row:
 
     def red(self):
         color = Color.WHITE
-        for num, cell in enumerate(self.data):
+        for cell in self.data:
             if cell and cell.color != Color.WHITE:
                 color = cell.color
         return color == Color.RED
 
     def from_prop(self, prop: Property, color):
         d = prop.dictify()
-        for num, cell in enumerate(self.data):
-            cell = Cell(d[cols_name[num]], color)
+        for num in range(len(self.data)):
+            self.data[num] = Cell(d[cols_name[num]], color)
     
     def equal(self, rw):
         for num in range(len(self.data)):
-            if rw.data[num] != self.data[num]:
+            if rw.data[num].data != self.data[num].data:
                 return False
         return True
 
@@ -374,10 +374,17 @@ class Table:
         for row in self.list:
             if not row.red():
                 no_red_tbl.append(row)
+        print("No red")
+        print()
+        print(no_red_tbl)
 
         codes = set()
         for row in no_red_tbl.list:
             codes.add(row.data[0])
+
+        print("Codes")
+        print()
+        print(codes)
 
         new_tbl = Table()
         used_codes = set()
@@ -632,10 +639,12 @@ def get_update():
     with open("failed.txt", "w") as fw:
         fw.writelines(failed)
 
-    return succeed
+    return deepcopy(succeed)
 
 FILENAME = "table.xls"
 tbl = load_file(FILENAME)
 succeed = get_update()
-new_tlb = tbl.update(succeed)
-new_tlb.write_out('table_new.xls')
+for pr in succeed:
+    print(pr.dictify())
+#new_tlb = tbl.update(succeed)
+#new_tlb.write_out('table_new.xls')
