@@ -1,29 +1,7 @@
-from resolver import resolve_dep
-
-try:
-    from xlrd import open_workbook
-except (ImportError, ModuleNotFoundError):
-    resolve_dep("xlrd")
-    from xlrd import open_workbook
-
-try:
-    from xlutils.copy import copy
-except (ImportError, ModuleNotFoundError):
-    resolve_dep("xlutils")
-    from xlutils.copy import copy
-
-try:
-    import xmltodict
-except (ImportError, ModuleNotFoundError):
-    resolve_dep("xmltodict")
-    import xmltodict
-
-try:
-    from openpyxl.workbook import Workbook
-except (ImportError, ModuleNotFoundError):
-    resolve_dep("openpyxl")
-    from openpyxl.workbook import Workbook
-
+from xlrd import open_workbook
+from xlutils.copy import copy
+import xmltodict
+from openpyxl.workbook import Workbook
 
 import subprocess
 import os

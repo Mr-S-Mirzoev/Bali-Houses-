@@ -1,46 +1,16 @@
-from resolver import resolve_dep # small package which helps to resolve dependencies errors
-from link_worker import get_links # as long as xlwt/xlwr do not support hyperlinks, we have to get them 'manually' using xmldump
-
-try:
-    import xlrd 
-except (ImportError, ModuleNotFoundError):
-    resolve_dep("xlrd")
-    import xlrd 
+import xlrd
 from xlrd.sheet import ctype_text
-
-try:
-    import xlwt
-except (ImportError, ModuleNotFoundError):
-    resolve_dep("xlwt")
-    import xlwt
-
-try:
-    from enum import Enum
-except (ImportError, ModuleNotFoundError):
-    resolve_dep("enum")
-    from enum import Enum
-
-try:
-    from termcolor import colored
-except (ImportError, ModuleNotFoundError):
-    resolve_dep("termcolor")
-    from termcolor import colored
-
-try:
-    from requests import get
-except (ImportError, ModuleNotFoundError):
-    resolve_dep("requests")
-    from requests import get
-
-try:
-    from bs4 import BeautifulSoup
-except (ImportError, ModuleNotFoundError):
-    resolve_dep("bs4")
-    from bs4 import BeautifulSoup
+import xlwt
+from enum import Enum
+from termcolor import colored
+from requests import get
+from bs4 import BeautifulSoup
 
 from copy import deepcopy
 import re
 import os
+
+from link_worker import get_links # as long as xlwt/xlwr do not support hyperlinks, we have to get them 'manually' using xmldump
 
 cols_name = ["Code", "Villa/Land", "Location type", "Location", "Year built", "Land size, are", "Building Size, sqm", "Bedrooms", "Bathrooms", "Status", "Distance to beach", "Distance to airport", "Distance to market", "Lease time", "Price", "Per are", "Per unit", "Per are per year", "Per unit per year", "Link"]
 

@@ -1,0 +1,9 @@
+pip3 install xlrd
+pip3 install xlutils
+pip3 install xmltodict
+pip3 install openpyxl
+pip3 install xlwt
+pip3 install enum
+pip3 install termcolor
+pip3 install requests
+pip3 install bs4
