@@ -682,7 +682,7 @@ ret_t = tbl.update(succeed)
 ret_t.write_out(FILENAME_OUT)
 os.remove(FILENAME_IN + 'x')
 os.remove(FILENAME_IN)
-os.rename(FILENAME_OUT, FILENAME_IN)
+#os.rename(FILENAME_OUT, FILENAME_IN)
 
 #for pr in succeed:
     #print(pr.dictify())
