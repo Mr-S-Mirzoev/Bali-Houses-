@@ -1,13 +1,46 @@
-import xlrd, xlwt
-import re
-from xlrd.sheet import ctype_text
-from enum import Enum
-from copy import deepcopy
-from termcolor import colored
-from bs4 import BeautifulSoup
-from requests import get
+from resolver import resolve_dep # small package which helps to resolve dependencies errors
+from link_worker import get_links # as long as xlwt/xlwr do not support hyperlinks, we have to get them 'manually' using xmldump
 
-from link_worker import get_links
+try:
+    import xlrd 
+except (ImportError, ModuleNotFoundError):
+    resolve_dep("xlrd")
+    import xlrd 
+from xlrd.sheet import ctype_text
+
+try:
+    import xlwt
+except (ImportError, ModuleNotFoundError):
+    resolve_dep("xlwt")
+    import xlwt
+
+try:
+    from enum import Enum
+except (ImportError, ModuleNotFoundError):
+    resolve_dep("enum")
+    from enum import Enum
+
+try:
+    from termcolor import colored
+except (ImportError, ModuleNotFoundError):
+    resolve_dep("termcolor")
+    from termcolor import colored
+
+try:
+    from requests import get
+except (ImportError, ModuleNotFoundError):
+    resolve_dep("requests")
+    from requests import get
+
+try:
+    from bs4 import BeautifulSoup
+except (ImportError, ModuleNotFoundError):
+    resolve_dep("bs4")
+    from bs4 import BeautifulSoup
+
+from copy import deepcopy
+import re
+import os
 
 cols_name = ["Code", "Villa/Land", "Location type", "Location", "Year built", "Land size, are", "Building Size, sqm", "Bedrooms", "Bathrooms", "Status", "Distance to beach", "Distance to airport", "Distance to market", "Lease time", "Price", "Per are", "Per unit", "Per are per year", "Per unit per year", "Link"]
 
@@ -46,6 +79,7 @@ def file_len(fname):
             pass
     return i + 1
 
+# Database dependent functions
 def prepare_data(property_containers):
     cpy = ' '.join([x for x in str(property_containers[0]).split(' ') if x != ''])
     cpy = cpy.replace('<ul>','')
@@ -292,6 +326,10 @@ class Cell:
         self.color = color
 
     def __repr__(self):
+        if not self.data:
+            self.data = str()
+        else:
+            self.data = str(self.data)
         if self.color == Color.GREEN:
             return colored(self.data, 'green')
         elif self.color == Color.YELLOW:
@@ -319,7 +357,10 @@ class Row:
     def from_prop(self, prop: Property, color):
         d = prop.dictify()
         for num in range(len(self.data)):
-            self.data[num] = Cell(d[cols_name[num]], color)
+            if d[cols_name[num]]:
+                self.data[num] = Cell(d[cols_name[num]], color)
+            else:
+                self.data[num] = Cell(None, color)
     
     def equal(self, rw):
         for num in range(len(self.data)):
@@ -369,54 +410,72 @@ class Table:
             s += str(row) + '\n'
         return s
 
-    def update(self, upd: list):
-        no_red_tbl = Table()
+    def row_by_code(self, code):
         for row in self.list:
-            if not row.red():
-                no_red_tbl.append(row)
-        print("No red")
-        print()
-        print(no_red_tbl)
+            if row.data[0].data == code:
+                return deepcopy(row)
 
-        codes = set()
-        for row in no_red_tbl.list:
-            codes.add(row.data[0])
+    def update(self, upd: list):
+        table_from_upd = Table()
+        i = 0
+        for u_property in upd:
+            row = Row(i)
+            row.from_prop(u_property, Color.WHITE)
+            table_from_upd.append(row)
 
-        print("Codes")
-        print()
-        print(codes)
+        old_codes = set()
+        for row in self.list:
+            if row.data[0].color != Color.RED:
+                old_codes.add(row.data[0].data)
 
-        new_tbl = Table()
-        used_codes = set()
+        new_codes = set()
+        for row in table_from_upd.list:
+            new_codes.add(row.data[0].data)
+
+        changed_or_not_changed = old_codes.intersection(new_codes)
+        deleted = old_codes.difference(changed_or_not_changed)
+        new = new_codes.difference(changed_or_not_changed)
+
+        table_to_return = Table()
         row_num = 0
-        for prop in upd:
-            if prop:
-                if prop.code in codes:
-                    rw = Row(row_num)
-                    rw.from_prop(prop, Color.WHITE)
-                    for row in no_red_tbl.list:
-                        if row.data[0] == prop.code:
-                            if not row.equal(rw):
-                                rw.redraw(Color.YELLOW)
-                    new_tbl.append(rw)
-                    row_num += 1
+        for code in changed_or_not_changed:
+            old_row = self.row_by_code(code)
+            new_row = table_from_upd.row_by_code(code)
+            row_for_return_table = Row(row_num)
+            cell_num = 0
+            for new_cell, old_cell in zip(new_row.data, old_row.data):
+                cl = deepcopy(new_cell)
+                if new_cell != old_cell:
+                    cl.color = Color.YELLOW
                 else:
-                    rw = Row(row_num)
-                    rw.from_prop(prop, Color.GREEN)
-                    new_tbl.append(rw)
-                    row_num += 1
-                used_codes.add(prop.code)
+                    cl.color = Color.WHITE
+                row_for_return_table.update_cell(cell_num, cl.data, cl.color)
+                cell_num += 1
+            table_to_return.append(row_for_return_table)
+            row_num += 1
+
+        for code in deleted:
+            old_row = self.row_by_code(code)
+            row_for_return_table = Row(row_num)
+            cell_num = 0
+            for cell in old_row.data:
+                row_for_return_table.update_cell(cell_num, cell.data, Color.RED)
+                cell_num += 1
+            table_to_return.append(row_for_return_table)
+            row_num += 1
+
+        for code in new:
+            new_row = table_from_upd.row_by_code(code)
+            row_for_return_table = Row(row_num)
+            cell_num = 0
+            for cell in new_row.data:
+                row_for_return_table.update_cell(cell_num, cell.data, Color.GREEN)
+                cell_num += 1
+            table_to_return.append(row_for_return_table)
+            row_num += 1
+        return table_to_return
+                
         
-        for row in no_red_tbl.list:
-            if row.data[0] not in used_codes:
-                row.redraw(Color.RED)
-                new_tbl.append(rw)
-                row_num += 1
-        print(new_tbl)
-        return new_tbl
-
-
-                    
 
     def write_out(self, filename):
         # Initialize a workbook
@@ -468,17 +527,17 @@ class Table:
 def load_file(file_name):
     book = xlrd.open_workbook(file_name, formatting_info=True)
     sheets = book.sheet_names()
-    print ("sheets are:", sheets)
+    #print ("sheets are:", sheets)
     links = get_links(file_name)
     for index, sh in enumerate(sheets):
         sheet = book.sheet_by_index(index)
-        print ("Sheet:", sheet.name)
+        #print ("Sheet:", sheet.name)
         rows, cols = sheet.nrows, sheet.ncols
-        print ("Number of rows: %s   Number of cols: %s" % (rows, cols))
+        #print ("Number of rows: %s   Number of cols: %s" % (rows, cols))
 
         # Iterate through rows, and print out the column values
         tbl = Table()
-        print(sheet.nrows)
+        #print(sheet.nrows)
         for row_idx in range(1, sheet.nrows):
             #print('Row ', row_idx)
             row = Row(row_idx)
@@ -634,6 +693,7 @@ def get_update():
             response = None
             property_containers = None
             d = None
+    printProgressBar(quantity, quantity, prefix = 'Progress:', suffix = 'Complete', length = 50)
     print()
 
     with open("failed.txt", "w") as fw:
@@ -641,10 +701,18 @@ def get_update():
 
     return deepcopy(succeed)
 
-FILENAME = "table.xls"
-tbl = load_file(FILENAME)
+FILENAME_IN = "table2.xls"
+FILENAME_OUT = 'table_out2.xls'
+tbl = load_file(FILENAME_IN)
 succeed = get_update()
-for pr in succeed:
-    print(pr.dictify())
+ret_t = tbl.update(succeed)
+ret_t.write_out(FILENAME_OUT)
+os.remove(FILENAME_IN + 'x')
+os.remove(FILENAME_IN)
+os.rename(FILENAME_OUT, FILENAME_IN)
+
+#for pr in succeed:
+    #print(pr.dictify())
+
 #new_tlb = tbl.update(succeed)
 #new_tlb.write_out('table_new.xls')
