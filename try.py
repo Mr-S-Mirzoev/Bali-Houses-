@@ -319,8 +319,7 @@ class Row:
     def from_prop(self, prop: Property, color):
         d = prop.dictify()
         for num, cell in enumerate(self.data):
-            cell.data = d[cols_name[num]]
-            cell.color = color
+            cell = Cell(d[cols_name[num]], color)
     
     def equal(self, rw):
         for num in range(len(self.data)):
