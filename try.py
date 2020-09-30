@@ -383,21 +383,22 @@ class Table:
         used_codes = set()
         row_num = 0
         for prop in upd:
-            if prop.code in codes:
-                rw = Row(row_num)
-                rw.from_prop(prop, Color.WHITE)
-                for row in no_red_tbl.list:
-                    if row.data[0] == prop.code:
-                        if not row.equal(rw):
-                            rw.redraw(Color.YELLOW)
-                new_tbl.append(rw)
-                row_num += 1
-            else:
-                rw = Row(row_num)
-                rw.from_prop(prop, Color.GREEN)
-                new_tbl.append(rw)
-                row_num += 1
-            used_codes.add(prop.code)
+            if prop:
+                if prop.code in codes:
+                    rw = Row(row_num)
+                    rw.from_prop(prop, Color.WHITE)
+                    for row in no_red_tbl.list:
+                        if row.data[0] == prop.code:
+                            if not row.equal(rw):
+                                rw.redraw(Color.YELLOW)
+                    new_tbl.append(rw)
+                    row_num += 1
+                else:
+                    rw = Row(row_num)
+                    rw.from_prop(prop, Color.GREEN)
+                    new_tbl.append(rw)
+                    row_num += 1
+                used_codes.add(prop.code)
         
         for row in no_red_tbl.list:
             if row.data[0] not in used_codes:

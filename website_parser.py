@@ -310,9 +310,12 @@ class Commit:
         self.old = old
         self.new = new
     
-    def stage(self):
+    def stage_commit(self):
         cols = ["Code", "Villa/Land", "Location type", "Location", "Year built", "Land size, are", "Building Size, sqm", "Bedrooms", "Bathrooms", "Status", "Distance to beach", "Distance to airport", "Distance to market", "Lease time", "Price", "Per are", "Per unit", "Per are per year", "Per unit per year"]
-        RED = 0
+        RED = 10
+        GREEN = 57
+        YELLOW = 13
+        WHITE = 64
         codes_old = set()
         for pr, clr in self.old.table:
             if clr != RED:
