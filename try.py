@@ -329,7 +329,8 @@ class Row:
 
     def redraw(self, color):
         for cell in self.data:
-            cell.color = color
+            if cell:
+                cell.color = color
 
     def coloredProperty(self):
         d = dict()
@@ -404,6 +405,7 @@ class Table:
                 row.redraw(Color.RED)
                 new_tbl.append(rw)
                 row_num += 1
+        print(new_tbl)
         return new_tbl
 
 
