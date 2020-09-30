@@ -2,7 +2,7 @@ import xlrd
 from xlrd.sheet import ctype_text
 import xlwt
 from enum import Enum
-from termcolor import colored
+#from termcolor import colored
 from requests import get
 from bs4 import BeautifulSoup
 
@@ -300,6 +300,8 @@ class Cell:
             self.data = str()
         else:
             self.data = str(self.data)
+        return self.data
+        """
         if self.color == Color.GREEN:
             return colored(self.data, 'green')
         elif self.color == Color.YELLOW:
@@ -308,6 +310,7 @@ class Cell:
             return self.data
         else:
             return colored(self.data, 'red')
+        """
     
 class Row:
     def __init__(self, row_num):
@@ -671,8 +674,8 @@ def get_update():
 
     return deepcopy(succeed)
 
-FILENAME_IN = "table2.xls"
-FILENAME_OUT = 'table_out2.xls'
+FILENAME_IN = "table.xls"
+FILENAME_OUT = 'table_out.xls'
 tbl = load_file(FILENAME_IN)
 succeed = get_update()
 ret_t = tbl.update(succeed)
