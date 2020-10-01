@@ -12,7 +12,7 @@ import os
 
 from link_worker import get_links # as long as xlwt/xlwr do not support hyperlinks, we have to get them 'manually' using xmldump
 
-cols_name = ["Code", "Villa/Land", "Location type", "Location", "Year built", "Land size, are", "Building Size, sqm", "Bedrooms", "Bathrooms", "Status", "Distance to beach", "Distance to airport", "Distance to market", "Lease time", "Price", "Per are", "Per unit", "Per are per year", "Per unit per year", "Link"]
+cols_name = ["Code", "Villa/Land", "Price change", "Location", "Year built", "Land size, are", "Building Size, sqm", "Bedrooms", "Bathrooms", "Status", "Distance to beach", "Distance to airport", "Distance to market", "Lease time", "Price", "Per are", "Per unit", "Per are per year", "Per unit per year", "Link"]
 
 def just_nums (s: str):
     res = str()
@@ -219,7 +219,7 @@ class Property:
                 self.per_unit_a_year = None
 
     def update_from_table(self, d):
-        cols = ["Code", "Villa/Land", "Location type", "Location", "Year built", "Land size, are", "Building Size, sqm", "Bedrooms", "Bathrooms", "Status", "Distance to beach", "Distance to airport", "Distance to market", "Lease time", "Price", "Per are", "Per unit", "Per are per year", "Per unit per year"]
+        cols = ["Code", "Villa/Land", "Price change", "Location", "Year built", "Land size, are", "Building Size, sqm", "Bedrooms", "Bathrooms", "Status", "Distance to beach", "Distance to airport", "Distance to market", "Lease time", "Price", "Per are", "Per unit", "Per are per year", "Per unit per year"]
         self.code = d[cols[0]]
         self.villa = (d[cols[1]] == 'Villa')
         self.loc_type = d[cols[2]]
@@ -235,12 +235,12 @@ class Property:
         self.d_market = d[cols[12]]
         self.time = d[cols[13]]
         if d[cols[14]]:
-            self.price = int(d[cols[14]][:-4])
+            self.price = int(str(d[cols[14]])[:str(d[cols[14]]).find('USD')])
         self.link = d['Link']
 
     def dictify(self):
         d = dict()
-        cols = ["Code", "Villa/Land", "Location type", "Location", "Year built", "Land size, are", "Building Size, sqm", "Bedrooms", "Bathrooms", "Status", "Distance to beach", "Distance to airport", "Distance to market", "Lease time", "Price", "Per are", "Per unit", "Per are per year", "Per unit per year", "Link"]
+        cols = ["Code", "Villa/Land", "Price change", "Location", "Year built", "Land size, are", "Building Size, sqm", "Bedrooms", "Bathrooms", "Status", "Distance to beach", "Distance to airport", "Distance to market", "Lease time", "Price", "Per are", "Per unit", "Per are per year", "Per unit per year", "Link"]
         d[cols[0]] = self.code
         d[cols[1]] = 'Villa' if self.villa else 'Land'
         d[cols[2]] = self.loc_type
@@ -419,8 +419,24 @@ class Table:
             for new_cell, old_cell in zip(new_row.data, old_row.data):
                 cl = deepcopy(new_cell)
                 if new_cell != old_cell:
-                    cl.color = Color.YELLOW
+                    if cell_num == 14:
+                        cl.color = Color.YELLOW
+                        if old_cell.data:
+                            old_pr = int(old_cell.data[0:int(old_cell.data.find('USD') - 1)])
+                            new_pr = int(new_cell.data[0:int(new_cell.data.find('USD') - 1)])
+                            pr_cd = deepcopy(cl)
+                            if old_pr < new_pr:
+                                pr_cd.data = '▲' + str(new_pr - old_pr) + ' USD'
+                                row_for_return_table.update_cell(2, pr_cd.data, pr_cd.color)
+                            elif old_pr == new_pr:
+                                row_for_return_table.update_cell(2, None, Color.WHITE)
+                            else:
+                                pr_cd.data = '▼' + str(old_pr - new_pr) + ' USD'
+                                row_for_return_table.update_cell(2, pr_cd.data, pr_cd.color)
+                    else:
+                        cl.color = Color.WHITE
                 else:
+                    row_for_return_table.update_cell(2, None, Color.WHITE)
                     cl.color = Color.WHITE
                 row_for_return_table.update_cell(cell_num, cl.data, cl.color)
                 cell_num += 1
@@ -456,7 +472,7 @@ class Table:
         # Add a sheet to the workbook
         sheet1 = book.add_sheet("Sheet1")
         # The data
-        cols = ["Code", "Villa/Land", "Location type", "Location", "Year built", "Land size, are", "Building Size, sqm", "Bedrooms", "Bathrooms", "Status", "Distance to beach", "Distance to airport", "Distance to market", "Lease time", "Price", "Per are", "Per unit", "Per are per year", "Per unit per year", "Link"]
+        cols = ["Code", "Villa/Land", "Price change", "Location", "Year built", "Land size, are", "Building Size, sqm", "Bedrooms", "Bathrooms", "Status", "Distance to beach", "Distance to airport", "Distance to market", "Lease time", "Price", "Per are", "Per unit", "Per are per year", "Per unit per year", "Link"]
         # Loop over the rows and columns and fill in the values
         row = sheet1.row(0)
         for index, col in enumerate(cols):
@@ -677,6 +693,8 @@ def get_update():
 FILENAME_IN = "table.xls"
 FILENAME_OUT = 'table_out.xls'
 tbl = load_file(FILENAME_IN)
+#tbl = Table()
+#print(tbl)
 succeed = get_update()
 ret_t = tbl.update(succeed)
 ret_t.write_out(FILENAME_OUT)
