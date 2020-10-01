@@ -301,16 +301,6 @@ class Cell:
         else:
             self.data = str(self.data)
         return self.data
-        """
-        if self.color == Color.GREEN:
-            return colored(self.data, 'green')
-        elif self.color == Color.YELLOW:
-            return colored(self.data, 'yellow')
-        elif self.color == Color.WHITE:
-            return self.data
-        else:
-            return colored(self.data, 'red')
-        """
     
 class Row:
     def __init__(self, row_num):
@@ -511,7 +501,6 @@ class Table:
         print()
         # Save the result
         book.save(filename)
-
     
 def load_file(file_name):
     book = xlrd.open_workbook(file_name, formatting_info=True)
